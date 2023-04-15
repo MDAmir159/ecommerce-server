@@ -1,11 +1,11 @@
 const express = require('express');
 const { INTERNAL_SERVER_ERROR, OK, NOT_FOUND, CREATED, UNPROCESSABLE_ENTITY, NOT_MODIFIED } = require('../HTTPStatus');
-const { getAllColors, addNewColor, updateColorInformationQuery, deleteColorById, deleteColorByName } = require('../queries/colorQueries');
+const { getAllSizes, addNewSize, updateSizeInformationQuery, deleteSizeById, deleteSizeByName } = require('../queries/sizeQueries');
 const routes = express.Router();
 
 routes.get('/', async(req, res) => {
     try {
-        const response = await getAllColors()
+        const response = await getAllSizes()
         return res.status(OK).json({
             data : response
         })
@@ -19,7 +19,7 @@ routes.post('/', async(req, res) => {
     // console.log(req.body);
     const inputArray = [name]
     try {
-        const response = await addNewColor(inputArray)
+        const response = await addNewSize(inputArray)
         if(!response) {
             return res.status(INTERNAL_SERVER_ERROR).json({
                 message: "no response from database"
@@ -35,16 +35,16 @@ routes.post('/', async(req, res) => {
 })
 
 routes.patch('/', async (req, res) => {
-    const {colorId, name} = req.body
-    // console.log(colorId, name);
-    if (colorId == null || name == null) {
+    const {sizeId, name} = req.body
+    // console.log(sizeId, name);
+    if (sizeId == null || name == null) {
         return res.status(UNPROCESSABLE_ENTITY).json({
             message: "necessary information missing"
         })
     }
-    const inputObj = {colorId, name}
+    const inputObj = {sizeId, name}
     try {
-        const response = await updateColorInformationQuery(inputObj)
+        const response = await updateSizeInformationQuery(inputObj)
         if (!response) {
             return res.status(INTERNAL_SERVER_ERROR).json({message: "no response"})
         } else if (response.changedRows === 0){
@@ -60,15 +60,15 @@ routes.patch('/', async (req, res) => {
 })
 
 routes.delete('/by_id', async (req, res) => {
-    const {colorId} = req.body
-    if(colorId == null){
+    const {sizeId} = req.body
+    if(sizeId == null){
         return res.status(UNPROCESSABLE_ENTITY).json({
             message: "necessary information missing"
         })
     }
 
     try {
-        const response = await deleteColorById(colorId)
+        const response = await deleteSizeById(sizeId)
         if (!response) {
             return res.status(INTERNAL_SERVER_ERROR).json({message: "no response"})
         } else {
@@ -82,15 +82,15 @@ routes.delete('/by_id', async (req, res) => {
 })
 
 routes.delete('/by_name', async (req, res) => {
-    const {colorName} = req.body
-    if(colorName == null){
+    const {sizeName} = req.body
+    if(sizeName == null){
         return res.status(UNPROCESSABLE_ENTITY).json({
             message: "necessary information missing"
         })
     }
 
     try {
-        const response = await deleteColorByName(colorName)
+        const response = await deleteSizeByName(sizeName)
         if (!response) {
             return res.status(INTERNAL_SERVER_ERROR).json({message: "no response"})
         } else {

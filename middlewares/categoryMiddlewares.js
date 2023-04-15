@@ -1,11 +1,14 @@
-const { OK, INTERNAL_SERVER_ERROR, UNPROCESSABLE_ENTITY, BAD_REQUEST, NOT_MODIFIED } = require("../HTTPStatus");
-const { getCategoryList, updateCategoryStatus } = require("../queries/categoryQueries");
+const { OK, INTERNAL_SERVER_ERROR, UNPROCESSABLE_ENTITY, BAD_REQUEST, NOT_MODIFIED, CREATED } = require("../HTTPStatus");
+const { getCategoryList, updateCategoryStatus, insertNewCategory, updateParentCategoryInformation, deleteCategory } = require("../queries/categoryQueries");
 
 const productMiddlewares = {
     categoryAdjacencyList,
     updateCategoryStatusMiddleware,
     generateCategoryArray,
-    categoryDescendantElements
+    categoryDescendantElements,
+    addNewCategory,
+    updateParentCategory,
+    deleteCategoryById
 }
 
 async function categoryAdjacencyList(req, res, next) {
@@ -135,5 +138,90 @@ function categoryDescendantElements(leaf_category, categoryAdjacencyList) {
     }
 
     return descendantCategories
+}
+
+async function addNewCategory(req, res) {
+    const {
+        name, parent_id, status_id
+    } = req.body
+    if (name == null || parent_id == null || status_id == null) {
+        return res.status(UNPROCESSABLE_ENTITY).json({
+            message: "missing necessary information"
+        })
+    }
+    const inputArray = [[name, parseInt(parent_id), parseInt(status_id)]]
+    try {
+        const response = await insertNewCategory(inputArray);
+        if (response) {
+            return res.status(CREATED).json({
+                message: "Created a new category"
+            })
+        } else {
+            return res.status(INTERNAL_SERVER_ERROR).json({message:"no response after insertion request"})
+        }
+    } catch (error) {
+        return res.status(INTERNAL_SERVER_ERROR).json({error:error.message})
+    }
+}
+
+async function updateParentCategory(req, res) {
+    const {
+        targetParent, replacedParent
+    } = req.body
+
+    if (targetParent == null || replacedParent == null) {
+        return res.status(UNPROCESSABLE_ENTITY).json({
+            message: "missing necessary information"
+        })
+    }
+
+    const inputObj = {targetParent, replacedParent}
+
+    try {
+        const response = await updateParentCategoryInformation(inputObj);
+        if (!response) {
+            return res.status(INTERNAL_SERVER_ERROR).json({message: "no response"})
+        } else if (response.changedRows === 0){
+            return res.status(NOT_MODIFIED).json({message: "Not changed "})
+        } else {
+            return res.status(OK).json({
+                message : "OK. successfully updated"
+            })
+        }
+    } catch (error) {
+        return res.status(INTERNAL_SERVER_ERROR).json({error:error.message})
+    }
+}
+
+async function deleteCategoryById(req, res) {
+    const {categoryId} = req.body
+    // console.log(categoryId);
+    if (categoryId == null ) {
+        return res.status(UNPROCESSABLE_ENTITY).json({
+            message: "missing necessary information"
+        })
+    }
+    try {
+        const response = await deleteCategory(categoryId);
+        if (!response) {
+            return res.status(INTERNAL_SERVER_ERROR).json({message: "no response"})
+        } else {
+            const targetParent = categoryId
+            const replacedParent = -1
+            const inputObj = {targetParent, replacedParent}
+            const responseOfChangingParentCategory = await updateParentCategoryInformation(inputObj)
+            if (!responseOfChangingParentCategory) {
+                return res.status(INTERNAL_SERVER_ERROR).json({message: "no response"})
+            } else if (responseOfChangingParentCategory.changedRows === 0){
+                return res.status(NOT_MODIFIED).json({message: "Not changed "})
+            } else {
+                return res.status(OK).json({
+                    message : "OK. successfully deleted and updated the database"
+                })
+            }
+        }
+    } catch (error) {
+        return res.status(INTERNAL_SERVER_ERROR).json({error:error.message})
+    }
 }
 module.exports = productMiddlewares
